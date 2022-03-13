@@ -6,6 +6,8 @@
 #include <string.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <sys/stat.h>
+
 const char *sysname = "shellfyre";
 
 enum return_codes
@@ -289,8 +291,8 @@ int prompt(struct command_t *command)
 		}
 		else
 			multicode_state = 0;
-
 		putchar(c); // echo the character
+
 		buf[index++] = c;
 		if (index >= sizeof(buf) - 1)
 			break;
@@ -315,6 +317,7 @@ int prompt(struct command_t *command)
 }
 
 int process_command(struct command_t *command);
+char* find_path(struct command_t *command);
 
 int main()
 {
@@ -380,15 +383,56 @@ int process_command(struct command_t *command)
 
 		/// TODO: do your own exec with path resolving using execv()
 
+        char *path = find_path(command);
+        if (path != NULL) {
+            execv(path, command->args);
+        } else {
+            printf("%s: command not found\n", command->name);
+        }
+
 		exit(0);
 	}
 	else
 	{
 		/// TODO: Wait for child to finish if command is not running in background
 
+        if (!command->background) {
+            wait(NULL);
+        }
+
 		return SUCCESS;
 	}
 
 	printf("-%s: %s: command not found\n", sysname, command->name);
 	return UNKNOWN;
+}
+
+char* find_path(struct command_t *command) {
+
+    char PATH[1024];
+    strcpy(PATH, getenv("PATH"));
+    
+    char *token = strtok(PATH, ":");
+    struct stat *file_properties = malloc(sizeof(struct stat));
+
+    char *command_path = malloc(512);
+    while (token != NULL) {
+        strcpy(command_path, "");
+
+        strcat(command_path, token);
+        strcat(command_path, "/");
+        strcat(command_path, command->name);
+
+        int exists = stat(command_path, file_properties);
+
+        if ((exists == 0) && (file_properties->st_mode & S_IXUSR)) {
+            free(file_properties);
+            return command_path;
+        }
+
+        token = strtok(NULL, ":");
+    }
+
+    free(file_properties);
+    return NULL;
 }
