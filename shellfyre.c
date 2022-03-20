@@ -475,6 +475,7 @@ char* find_path(struct command_t *command) {
         token = strtok(NULL, ":");
     }
 
+    free(command_path);
     free(file_properties);
     return NULL;
 }
