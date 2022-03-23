@@ -14,6 +14,7 @@
 
 const char *sysname = "shellfyre";
 char cdh_file[1024];
+char todo_file[1024];
 
 enum return_codes
 {
@@ -328,11 +329,17 @@ void print_files(char *file_list[], size_t size);
 void open_files(char *file_list[], size_t size);
 void append_history_file();
 void read_print_history();
+void show_todo();
+void add_todo();
+void remove_todo();
 
 int main()
 {
     getcwd(cdh_file, sizeof(cdh_file));
     strcat(cdh_file, "/cdh_history.txt");
+
+    getcwd(todo_file, sizeof(todo_file));
+    strcat(todo_file, "/todo_list.txt");
 
     while (1)
     {
@@ -431,6 +438,21 @@ int process_command(struct command_t *command)
                 chdir(token);
                 append_history_file();
                 token = strtok(NULL, "/");
+            }
+        }
+
+        return SUCCESS;
+    }
+
+    // My own command -> Author: Kemal Bora Bayraktar
+    if (strcmp(command->name, "todo") == 0) {
+        if (command->arg_count == 0) {
+            show_todo();
+        } else if (command->arg_count == 1) {
+            if (strcmp(command->args[0], "add") == 0) {
+                add_todo();
+            } else if (strcmp(command->args[0], "remove") == 0) {
+                remove_todo();
             }
         }
 
@@ -652,5 +674,71 @@ void read_print_history() {
             path[strlen(path) - 1] = '\0';
             chdir(path);
         }
+    }
+}
+
+void show_todo() {
+    FILE *fp = fopen(todo_file, "r");
+
+    if (!fp) {
+        printf("There is no task to do.\n");
+    } else {
+        char line[200];
+
+        int i = 1;
+        while (fgets(line, sizeof(line), fp)) {
+            printf("%d) %s", i, line);
+            i++;
+        }
+    }
+    fclose(fp);
+}
+
+void add_todo() {
+    FILE *fp = fopen(todo_file, "a+");
+
+    if (fp) {
+        char task[1024];
+        printf("Task to add: ");
+        fgets(task, sizeof(task), stdin);
+
+        fputs(task, fp);
+    }
+
+    fclose(fp);
+}
+
+void remove_todo() {
+    FILE *fp = fopen(todo_file, "r");
+    FILE *temp = fopen("temp.txt", "w");
+
+    char line[200];
+
+    if (!fp) {
+        printf("There is no task to remove.\n");
+    } else {
+        char input[10];
+        printf("Index of task to remove: ");
+        fgets(input, sizeof(input), stdin);
+        int line_number = atoi(input);
+
+        int i = 1;
+        while(fgets(line, sizeof(line), fp)) {
+            if (i != line_number) {
+                fputs(line, temp);
+            }
+            i++;
+        }
+        fclose(temp);
+        fclose(fp);
+
+        fp = fopen(todo_file, "w");
+        temp = fopen("temp.txt", "r");
+        while(fgets(line, sizeof(line), temp)) {
+            fputs(line, fp);
+        }
+        fclose(temp);
+        fclose(fp);
+        remove("temp.txt");
     }
 }
