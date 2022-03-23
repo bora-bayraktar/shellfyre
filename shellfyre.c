@@ -10,8 +10,10 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <dirent.h> 
+#include <ctype.h>
 
 const char *sysname = "shellfyre";
+char cdh_file[1024];
 
 enum return_codes
 {
@@ -324,9 +326,14 @@ char* find_path(struct command_t *command);
 void search_file(char *file, char *dir_name, char *option, char *file_list[]);
 void print_files(char *file_list[], size_t size);
 void open_files(char *file_list[], size_t size);
+void append_history_file();
+void read_print_history();
 
 int main()
 {
+    getcwd(cdh_file, sizeof(cdh_file));
+    strcat(cdh_file, "/cdh_history.txt");
+
     while (1)
     {
         struct command_t *command = malloc(sizeof(struct command_t));
@@ -362,8 +369,12 @@ int process_command(struct command_t *command)
         if (command->arg_count > 0)
         {
             r = chdir(command->args[0]);
-            if (r == -1)
+            if (r == -1) {
                 printf("-%s: %s: %s\n", sysname, command->name, strerror(errno));
+            } else {
+                append_history_file();
+            }
+
             return SUCCESS;
         }
     }
@@ -403,6 +414,11 @@ int process_command(struct command_t *command)
             free(file_list[i]);
         }
 
+        return SUCCESS;
+    }
+
+    if (strcmp(command->name, "cdh") == 0) {
+        read_print_history();
         return SUCCESS;
     }
 
@@ -544,6 +560,71 @@ void open_files(char *file_list[], size_t size) {
             } else {
                 wait(NULL);
             }
+        }
+    }
+}
+
+void append_history_file() {
+    FILE *fp = fopen(cdh_file, "a+");
+
+    if (fp) {
+        char line[1024];
+        char cwd[800];
+
+        getcwd(cwd, sizeof(cwd));
+        snprintf(line, sizeof(line), "%s\n", cwd);
+        fputs(line, fp);
+    }
+
+    fclose(fp);
+}
+
+void read_print_history() {
+    FILE *fp = fopen(cdh_file, "r");
+    if (!fp) {
+        printf("You didn't visited any directory yet.\n");
+    } else {
+        char lines[100][1024];
+
+        int number_of_lines = 0;
+        while (fgets(lines[number_of_lines], 1024, fp)) number_of_lines++;
+
+        char last_ten_dir[10][1024];
+        int counter = 0;
+        int number_of_dir = 0;
+        while (number_of_lines >= 0 && counter <= 10) {
+            strcpy(last_ten_dir[number_of_dir], lines[number_of_lines]);
+            number_of_lines--;
+            number_of_dir++;
+            counter++;
+        }
+
+        int i = 0;
+        while (i < number_of_dir - 1) {
+            printf("%c %d) %s", 95 + number_of_dir - i, number_of_dir - i - 1, last_ten_dir[number_of_dir - i - 1]);
+            i++;
+        }
+
+        char input[10];
+        printf("Select directory by letter or number: ");
+        fgets(input, 10, stdin);
+        input[strlen(input) - 1] = '\0';
+
+        int valid = 1;
+        for (int i = 0; i < strlen(input); i++) {
+            if (!isdigit(input[i])) {
+                valid = 0;
+            }
+        }
+
+        if (valid && atoi(input) < number_of_dir) {
+            char *path = last_ten_dir[atoi(input)];
+            path[strlen(path) - 1] = '\0';
+            chdir(path);
+        } else if (strlen(input) == 1 && input[0] > 96 && input[0] < 97 + number_of_dir - 1) {
+            char *path = last_ten_dir[input[0] - 96];
+            path[strlen(path) - 1] = '\0';
+            chdir(path);
         }
     }
 }
