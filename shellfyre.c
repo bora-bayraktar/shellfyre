@@ -429,6 +429,7 @@ int process_command(struct command_t *command)
             while (token != NULL) {
                 mkdir(token, 0700);
                 chdir(token);
+                append_history_file();
                 token = strtok(NULL, "/");
             }
         }
