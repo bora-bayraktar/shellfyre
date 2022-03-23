@@ -601,7 +601,18 @@ void read_print_history() {
 
         int i = 0;
         while (i < number_of_dir - 1) {
-            printf("%c %d) %s", 95 + number_of_dir - i, number_of_dir - i - 1, last_ten_dir[number_of_dir - i - 1]);
+            char output[1024];
+            strcpy(output, last_ten_dir[number_of_dir - i - 1]);
+            char *loc = strstr(output, getenv("HOME"));
+
+            if (loc) {
+                int n = 0;
+                while (loc[n] == getenv("HOME")[n]) n++;
+                printf("%c %d) ~%s", 95 + number_of_dir - i, number_of_dir - i - 1, loc + n);
+            } else {
+                printf("%c %d) %s", 95 + number_of_dir - i, number_of_dir - i - 1, output);
+            }
+
             i++;
         }
 
