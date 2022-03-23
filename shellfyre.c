@@ -422,6 +422,20 @@ int process_command(struct command_t *command)
         return SUCCESS;
     }
 
+    if (strcmp(command->name, "take") == 0) {
+        if (command->arg_count == 1) {
+            char *token = strtok(command->args[0], "/");
+
+            while (token != NULL) {
+                mkdir(token, 0700);
+                chdir(token);
+                token = strtok(NULL, "/");
+            }
+        }
+
+        return SUCCESS;
+    }
+
     pid_t pid = fork();
 
     if (pid == 0) // child
