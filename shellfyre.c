@@ -323,7 +323,7 @@ int prompt(struct command_t *command)
 }
 
 int process_command(struct command_t *command);
-char* find_path(struct command_t *command);
+char* find_path(char *command_name);
 void search_file(char *file, char *dir_name, char *option, char *file_list[]);
 void print_files(char *file_list[], size_t size);
 void open_files(char *file_list[], size_t size);
@@ -444,6 +444,28 @@ int process_command(struct command_t *command)
         return SUCCESS;
     }
 
+    if (strcmp(command->name, "joker") == 0) {
+        FILE *fp = fopen("crontab_joker.txt", "w");
+
+        fputs("*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send \"$(curl https://icanhazdadjoke.com/)\"\n", fp);
+        fclose(fp);
+
+        char *args[] = {"crontab", "crontab_joker.txt", NULL};
+        char *path = find_path("crontab");
+
+        pid_t pid = fork();
+        if (pid == 0) {
+            execv(path, args);
+        } else {
+            wait(NULL);
+        }
+
+        free(path);
+        remove("crontab_joker.txt");
+
+        return SUCCESS;
+    }
+
     // My own command -> Author: Kemal Bora Bayraktar
     if (strcmp(command->name, "todo") == 0) {
         if (command->arg_count == 0) {
@@ -478,7 +500,7 @@ int process_command(struct command_t *command)
 
         /// TODO: do your own exec with path resolving using execv()
 
-        char *path = find_path(command);
+        char *path = find_path(command->name);
         if (path != NULL) {
             execv(path, command->args);
         } else {
@@ -502,7 +524,7 @@ int process_command(struct command_t *command)
     return UNKNOWN;
 }
 
-char* find_path(struct command_t *command) {
+char* find_path(char *command_name) {
 
     char PATH[1024];
     strcpy(PATH, getenv("PATH"));
@@ -516,7 +538,7 @@ char* find_path(struct command_t *command) {
 
         strcat(command_path, token);
         strcat(command_path, "/");
-        strcat(command_path, command->name);
+        strcat(command_path, command_name);
 
         int exists = stat(command_path, file_properties);
 
@@ -593,7 +615,9 @@ void open_files(char *file_list[], size_t size) {
 
             pid_t pid = fork();
             if (pid == 0) {
-                execv("/usr/bin/xdg-open", args);
+                char *path = find_path("xdg-open");
+                execv(path, args);
+                free(path);
             } else {
                 wait(NULL);
             }
@@ -689,6 +713,10 @@ void show_todo() {
         while (fgets(line, sizeof(line), fp)) {
             printf("%d) %s", i, line);
             i++;
+        }
+
+        if (i == 1) {
+            printf("There is no task to do.\n");
         }
     }
     fclose(fp);
