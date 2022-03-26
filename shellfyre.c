@@ -447,7 +447,7 @@ int process_command(struct command_t *command)
     if (strcmp(command->name, "joker") == 0) {
         FILE *fp = fopen("crontab_joker.txt", "w");
 
-        fputs("*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send \"$(curl -s https://icanhazdadjoke.com/)\"\n", fp);
+        fputs("*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send Joke \"$(curl -s https://icanhazdadjoke.com/)\"\n", fp);
         fclose(fp);
 
         char *args[] = {"crontab", "crontab_joker.txt", NULL};
