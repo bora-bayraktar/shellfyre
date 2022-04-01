@@ -11,10 +11,12 @@
 #include <sys/stat.h>
 #include <dirent.h> 
 #include <ctype.h>
+#include <fcntl.h>
 
 const char *sysname = "shellfyre";
 char cdh_file[1024];
 char todo_file[1024];
+int module_inserted = 0;
 
 enum return_codes
 {
@@ -332,6 +334,7 @@ void read_print_history();
 void show_todo();
 void add_todo();
 void remove_todo();
+void pstraverse(struct command_t *command);
 
 int main()
 {
@@ -368,8 +371,14 @@ int process_command(struct command_t *command)
     if (strcmp(command->name, "") == 0)
         return SUCCESS;
 
-    if (strcmp(command->name, "exit") == 0)
+    if (strcmp(command->name, "exit") == 0) {
+        if (module_inserted) {
+            char *path = find_path("sudo");
+            char *args[] = {"sudo", "rmmod", "pstraverse.ko", NULL};
+            execv(path, args);
+        }
         return EXIT;
+    }
 
     if (strcmp(command->name, "cd") == 0)
     {
@@ -426,6 +435,7 @@ int process_command(struct command_t *command)
 
     if (strcmp(command->name, "cdh") == 0) {
         read_print_history();
+        append_history_file();
         return SUCCESS;
     }
 
@@ -477,6 +487,12 @@ int process_command(struct command_t *command)
                 remove_todo();
             }
         }
+
+        return SUCCESS;
+    }
+
+    if (strcmp(command->name, "pstraverse") == 0) {
+        pstraverse(command);
 
         return SUCCESS;
     }
@@ -718,8 +734,8 @@ void show_todo() {
         if (i == 1) {
             printf("There is no task to do.\n");
         }
+        fclose(fp);
     }
-    fclose(fp);
 }
 
 void add_todo() {
@@ -770,3 +786,35 @@ void remove_todo() {
         remove("temp.txt");
     }
 }
+
+void pstraverse(struct command_t *command) {
+    char pid[10];
+    char option[10];
+
+    snprintf(pid, sizeof(pid), "pid=%s", command->args[0]);
+    snprintf(option, sizeof(option), "option=%s", command->args[1]);
+
+    if (!module_inserted) {
+        pid_t current_pid = fork();
+        if (current_pid == 0) {
+            char *path = find_path("sudo");
+            char *args[] = {"sudo", "insmod", "pstraverse.ko", pid, option, NULL};
+            execv(path, args);
+        } else {
+            module_inserted = 1;
+            wait(NULL);
+        }
+    } else {
+        int fp = open("/dev/my_device", O_RDWR);
+
+        if (fp >= 0) {
+            int8_t write_buf[20];
+            strcpy(write_buf, command->args[0]);
+            strcat(write_buf, " ");
+            strcat(write_buf, command->args[1]);
+            write(fp, write_buf, strlen(write_buf) + 1);
+        }
+        close(fp);
+    }
+}
+
