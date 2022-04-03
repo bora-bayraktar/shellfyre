@@ -1,4 +1,5 @@
 obj-m := pstraverse.o
+ccflags-y := -std=gnu99 -Wno-declaration-after-statement
 
 KDIR := /lib/modules/$(shell uname -r)/build
 PWD := $(shell pwd)
@@ -8,7 +9,7 @@ PWD := $(shell pwd)
 default: module gcc run
 
 module:
-	$(MAKE) -C $(KDIR) M=$(shell pwd) modules	
+	$(MAKE) -C $(KDIR) M=$(shell pwd) modules
 
 clean: 
 	$(MAKE) -C $(KDIR) M=$(shell pwd) clean

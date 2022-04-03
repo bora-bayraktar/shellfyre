@@ -398,6 +398,7 @@ int process_command(struct command_t *command)
 
     // TODO: Implement your custom commands here
 
+    // Filesearch command
     if (strcmp(command->name, "filesearch") == 0) {
         int size = 1024;
         char *file_list[size];
@@ -434,6 +435,7 @@ int process_command(struct command_t *command)
         return SUCCESS;
     }
 
+    // cdh command
     if (strcmp(command->name, "cdh") == 0) {
         read_print_history();
         append_history_file();
@@ -520,6 +522,7 @@ int process_command(struct command_t *command)
 
         /// TODO: do your own exec with path resolving using execv()
 
+        // Find the path of the command, then execute.
         char *path = find_path(command->name);
         if (path != NULL) {
             execv(path, command->args);
