@@ -46,6 +46,7 @@ static struct file_operations fops = {
 
 static LIST_HEAD(queue);
 
+// Breadt First Search for process tree.
 static void BFS(struct task_struct *task){
     struct task_struct *child;
     struct list_head *list;
@@ -59,6 +60,7 @@ static void BFS(struct task_struct *task){
     }
 }
 
+// Helper function for BFS.
 static void BFS_helper(struct task_struct *task){
     struct task_struct *child;
     struct list_head *list;
@@ -78,6 +80,7 @@ static void BFS_helper(struct task_struct *task){
     }
 }
 
+// Depth First Search for process tree.
 static void DFS(struct task_struct *task) {
     struct task_struct *child;
     struct list_head *list;
@@ -89,16 +92,19 @@ static void DFS(struct task_struct *task) {
     }
 }
 
+// Space allocation for device file.
 static int my_open(struct inode *inode, struct file *file) {
     memoryBlock = kmalloc(SIZE, GFP_KERNEL);
     return 0;
 }
 
+// Freeing allocated space.
 static int my_release(struct inode *inode, struct file *file) {
     kfree(memoryBlock);
     return 0;
 }
 
+// Copy from kernel space to user space.
 static ssize_t my_read(struct file *filp, char __user *buf, size_t len, loff_t *off) {
     if (copy_to_user(buf, memoryBlock, strlen(memoryBlock)) != 0) {
         printk(KERN_INFO "Copy from kernel space to user space is failed.\n");
@@ -106,6 +112,7 @@ static ssize_t my_read(struct file *filp, char __user *buf, size_t len, loff_t *
     return len;
 }
 
+// Copy data from user space to kernel space and call the proper function.
 static ssize_t my_write(struct file *filp, const char __user *buf, size_t len, loff_t *off) {
     if (copy_from_user(memoryBlock, buf, len) != 0) {
         printk(KERN_INFO "Copy from user space to kernel space is failed.\n");
@@ -139,6 +146,7 @@ static ssize_t my_write(struct file *filp, const char __user *buf, size_t len, l
     return len;
 }
 
+// Initilization function that creates the device file.
 static int __init my_init(void) {
     printk(KERN_INFO "Inserting module pstraverse...\n");
 
@@ -189,6 +197,7 @@ r_class:
     return -1;
 }
 
+// Exit function that removes the device file.
 static void __exit my_exit(void) {
     device_destroy(dev_class, dev);
     class_destroy(dev_class);

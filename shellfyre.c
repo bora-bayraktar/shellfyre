@@ -373,6 +373,7 @@ int process_command(struct command_t *command)
 
     if (strcmp(command->name, "exit") == 0) {
         if (module_inserted) {
+            // Remove the kernel module, if it is inserted.
             char *path = find_path("sudo");
             char *args[] = {"sudo", "rmmod", "pstraverse.ko", NULL};
             execv(path, args);
@@ -441,6 +442,7 @@ int process_command(struct command_t *command)
 
     if (strcmp(command->name, "take") == 0) {
         if (command->arg_count == 1) {
+            // Tokenize the string and create the directories, if they don't exist.
             char *token = strtok(command->args[0], "/");
 
             while (token != NULL) {
@@ -455,6 +457,7 @@ int process_command(struct command_t *command)
     }
 
     if (strcmp(command->name, "joker") == 0) {
+        // Create a temporary file for crontab then set the cron job.
         FILE *fp = fopen("crontab_joker.txt", "w");
 
         fputs("*/15 * * * * XDG_RUNTIME_DIR=/run/user/$(id -u) notify-send Joke \"$(curl -s https://icanhazdadjoke.com/)\"\n", fp);
@@ -477,6 +480,7 @@ int process_command(struct command_t *command)
     }
 
     // My own command -> Author: Kemal Bora Bayraktar
+    // This command shows the todo list.
     if (strcmp(command->name, "todo") == 0) {
         if (command->arg_count == 0) {
             show_todo();
@@ -540,6 +544,7 @@ int process_command(struct command_t *command)
     return UNKNOWN;
 }
 
+// Function to find the path of a command.
 char* find_path(char *command_name) {
 
     char PATH[1024];
@@ -571,6 +576,7 @@ char* find_path(char *command_name) {
     return NULL;
 }
 
+// This function finds the files that contains a certain string in a given directory.
 void search_file(char *file, char *dir_name, char *option, char *file_list[]) {
     DIR *dir;
     struct dirent *entry;
@@ -609,6 +615,7 @@ void search_file(char *file, char *dir_name, char *option, char *file_list[]) {
     }
 }
 
+// Prints the files that have been found.
 void print_files(char *file_list[], size_t size) {
     for (int i = 0; i < size; i++) {
         if (strcmp(file_list[i], "") == 0) {
@@ -624,6 +631,7 @@ void print_files(char *file_list[], size_t size) {
     }
 }
 
+// Open the files with the users deafult application.
 void open_files(char *file_list[], size_t size) {
     for (int i = 0; i < size; i++) {
         if (strcmp(file_list[i], "") != 0) {
@@ -641,6 +649,7 @@ void open_files(char *file_list[], size_t size) {
     }
 }
 
+// Append the changed directory to cdh_history.txt file.
 void append_history_file() {
     FILE *fp = fopen(cdh_file, "a+");
 
@@ -656,6 +665,8 @@ void append_history_file() {
     fclose(fp);
 }
 
+// Reads and prints cdh_history.txt, then waits for an input from the
+// user and changes to that directory.
 void read_print_history() {
     FILE *fp = fopen(cdh_file, "r");
     if (!fp) {
@@ -717,6 +728,7 @@ void read_print_history() {
     }
 }
 
+// Lists the tasks from the todo_list.txt file.
 void show_todo() {
     FILE *fp = fopen(todo_file, "r");
 
@@ -738,6 +750,7 @@ void show_todo() {
     }
 }
 
+// Add a new task to todo_list.txt.
 void add_todo() {
     FILE *fp = fopen(todo_file, "a+");
 
@@ -752,6 +765,7 @@ void add_todo() {
     fclose(fp);
 }
 
+// Remove a task from todo_list.txt file.
 void remove_todo() {
     FILE *fp = fopen(todo_file, "r");
     FILE *temp = fopen("temp.txt", "w");
@@ -787,6 +801,8 @@ void remove_todo() {
     }
 }
 
+// Run pstraverse with the given PID and option.
+// If the kernel module is not inserted, insert it.
 void pstraverse(struct command_t *command) {
     char pid[10];
     char option[10];
