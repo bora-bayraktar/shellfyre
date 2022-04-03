@@ -13,6 +13,8 @@
 #include <ctype.h>
 #include <fcntl.h>
 
+// Kemal Bora Bayraktar 75618
+
 const char *sysname = "shellfyre";
 char cdh_file[1024];
 char todo_file[1024];
