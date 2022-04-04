@@ -9,3 +9,5 @@ Use provided **Makefile**.
 ### Uninstallation
 The kernel module is removed when you exit the shell. To clean the executable files, use provided **Makefile**.
 - Type ```make clean```.
+
+For more information, take a look at **report.pdf**.
